@@ -4,8 +4,8 @@ import DataManager from "./DataManager.js";
 
 /**
  * crear las clases articulo y DataManager
- * importarlos
- * crear el objeto dataManager antes del formulario, linea 148
+ * importar las clases
+ * crear el objeto dataManager antes del formulario, linea 143
  * 
  */
 
@@ -195,15 +195,9 @@ document.getElementById('btnShowProducts').addEventListener('click', function ()
 
     // Agregar celdas con los valores del formulario
     agregarFilaTabla(dbArticulos, tbody);
-    agregarFilaTabla(dbArticulos, tbody);
     mostrarTablaProductos(); // Mostrar la tabla de productos
 });
 
-
-document.getElementById('btnDeleteAllProducts').addEventListener('click', function () {
-    dataManager.clear(); // Limpiar el sessionStorage
-    ocultarTablaProductos();
-});
 
 
 document.getElementById('btnDeleteAllProducts').addEventListener('click', function () {
@@ -216,7 +210,6 @@ const agregarFilaTabla = (dataSession, tbody) => {
     tbody.textContent = "";
 
     for (const articulo of dataSession) {
-
         const newRow = document.createElement('tr');
 
         const propiedades = ["id", "nombre", "cantidad", "descripcion", "precio", "categoria", "tipoVenta"];
@@ -231,7 +224,6 @@ const agregarFilaTabla = (dataSession, tbody) => {
         Buttons.crearBotonesAcciones(actionsCell, editButton, Buttons.botones.btnEdit.id, Buttons.botones.btnEdit.ruta, Buttons.botones.btnEdit.title);
         // Crea el boton de Eliminar
         Buttons.crearBotonesAcciones(actionsCell, deleteButton, Buttons.botones.btnDelete.id, Buttons.botones.btnDelete.ruta, Buttons.botones.btnDelete.title);
-
 
         // Agregar la celda de acciones a la fila
         newRow.appendChild(actionsCell);
@@ -253,7 +245,6 @@ function createCell(row, value) {
 // Funciones =====================================
 
 function resetearFormulario(form) {
-    form.reset();
     form.reset();
     const rangoCantidad = document.getElementById('rngCantidad');
     rangoCantidad.value = 100; // Reinicia el valor del rango a 100
@@ -292,4 +283,3 @@ function mostrarAlerta(msg, tipoAlerta) {
         console.log("Error en mostrar alerta: " + error);
     }
 }
-
