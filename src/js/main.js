@@ -2,6 +2,12 @@ import Buttons from "./buttons.js";
 import Articulo from "./Articulo.js";
 import DataManager from "./DataManager.js";
 
+/**
+ * crear las clases articulo y DataManager
+ * importarlos
+ * crear el objeto dataManager antes del formulario, linea 148
+ * 
+ */
 
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -156,6 +162,8 @@ document.getElementById('frmAltaProducto').addEventListener('submit', function (
     // Obtener los datos del formulario. this hace referencia al formulario actual frmAltaProducto
     const formData = new FormData(this);
 
+
+    // =====================lo hace el estudiante para validar que no se repita el id ===================
     const id = formData.get('txtIDArticulo'); // Obtener el ID del artículo
     console.log("form", id); // Imprimir el ID en la consola
     const dbSession = dataManager.readData(); // Leer los datos de sessionStorage
@@ -164,7 +172,8 @@ document.getElementById('frmAltaProducto').addEventListener('submit', function (
     if (idExiste) {
         mostrarAlerta("El ID del artículo ya existe, por favor ingrese otro ID", "alert alert-danger");
         return;
-    }
+    } // =============== hasta aquí
+
 
     const objArticulo = new Articulo(formData.get('txtIDArticulo'),
         formData.get('txtNombre'),
@@ -282,7 +291,5 @@ function mostrarAlerta(msg, tipoAlerta) {
     } catch (error) {
         console.log("Error en mostrar alerta: " + error);
     }
-
-
 }
 
