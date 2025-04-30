@@ -1,4 +1,6 @@
 import Buttons from "./buttons.js";
+import Articulo from "./Articulo.js";
+import DataManager from "./DataManager.js";
 
 
 
@@ -8,12 +10,6 @@ document.addEventListener('DOMContentLoaded', function () {
         window.location.href = "login.html"; // Redirige al login si no está autenticado
         return; // evita que el resto del código se ejecute
     }
-
-    // // Manipula el historial para evitar regresar al login
-    // history.pushState(null, null, window.location.href); // Agrega una entrada al historial
-    // window.addEventListener('popstate', function () {
-    //     history.pushState(null, null, window.location.href); // Evita regresar al login
-    // });
 
 
     // Ocultar la tabla al cargar la página
@@ -33,9 +29,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // event contiene información sobre el evento que ocurrió
         // event.target.id accede al elemento (etiqueta) específico dentro de #tbodyProductos que fue clickeado.
 
-        //alert('me diste clic'); // muestra un mensaje de alerta al hacer clic en la tabla
-
-
 
         // ACCIONES DE LOS BOTONES
 
@@ -45,7 +38,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             datosCeldas = []; // Reinicia el array de datos de celdas
             cells.forEach((cell, index) => {
-                if (index < cells.length - 1) { // Evita la última celda (acciones)
+
+
+                if (index < cells.length - 1 && index !== 0) { // Evita la última celda (acciones) y evita la celda del ID
+
+
                     const valorActual = cell.textContent; // Obtiene el valor actual de la celda
                     datosCeldas.push(valorActual); // Agrega el valor actual al array
 
@@ -69,32 +66,48 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (event.target.id.startsWith('btnEliminar')) {
-            const row = event.target.closest('tr'); // Encuentra la fila más cercana al botón
-            row.remove(); // Elimina la fila de la tabla
-            console.log('Producto eliminado.');
+            const rowDelete = event.target.closest('tr'); // Encuentra la fila más cercana al botón
+            const id = rowDelete.querySelectorAll('td')[0].textContent; // Obtiene el ID de la celda correspondiente
+
+            rowDelete.remove(); // Elimina la fila de la tabla
+
+            dataManager.delete(id); // Elimina el objeto del sessionStorage
 
             // Ocultar la tabla si no hay más filas
             if (document.querySelectorAll('#tbodyProductos tr').length === 0) {
                 ocultarTablaProductos();
             }
+
+
         }
 
         if (event.target.id === 'btnGuardar') {
             const rowSave = event.target.closest('tr');
-            const cells = rowSave.querySelectorAll('input'); // Selecciona todas las celdas de la fila
-            cells.forEach((cell, index) => {
-                if (index < cells.length) { // Evita la última celda (acciones)
-                    const valorNuevo = cell.value; // Obtiene el nuevo valor del campo de entrada
-                    // parentNode es el elemento padre del input, que es la celda <td>
-                    cell.parentNode.textContent = valorNuevo; // Establece el nuevo valor en la celda
-                }
-            });
+            const id = rowSave.querySelectorAll('td')[0].textContent;
+            const input = rowSave.querySelectorAll('input'); // Selecciona todas las celdas de la fila
 
-            Buttons.changeButtonEvent(event, Buttons.botones.btnEdit.id, Buttons.botones.btnEdit.ruta, Buttons.botones.btnEdit.title); // Cambia el botón de guardar a editar
+            const newObjArticulo = new Articulo(); // Crear una nueva instancia de Articulo
 
-            // no funciona con getElementById porque no es un nodo de documento, es una celda
-            const cancelButton = rowSave.querySelector('#btnCancelar'); // Selecciona el botón de eliminar
-            Buttons.changeButtonNotEvent(cancelButton, Buttons.botones.btnDelete.id, Buttons.botones.btnDelete.ruta, Buttons.botones.btnDelete.title); // Cambia el botón de cancelar a eliminar
+            newObjArticulo.id = id; // Asigna el ID de la celda correspondiente
+            newObjArticulo.nombre = input[0].value;
+            newObjArticulo.cantidad = input[1].value;
+            newObjArticulo.descripcion = input[2].value;
+            newObjArticulo.precio = input[3].value;
+            newObjArticulo.categoria = input[4].value;
+            newObjArticulo.tipoVenta = input[5].value;
+
+
+
+            dataManager.updateData(id, newObjArticulo); // Actualiza el objeto en sessionStorage
+
+            const dbArticulos = dataManager.readData(); // Leer los datos de sessionStorage
+
+            // obtener el cuerpo de la tabla
+            const tbody = document.getElementById('tbodyProductos');
+
+            // Agregar celdas con los valores del formulario
+            agregarFilaTabla(dbArticulos, tbody);
+            mostrarTablaProductos(); // Mostrar la tabla de productos
             return; // Salir de la función después de guardar
         }
 
@@ -127,20 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-
-
-/* BOTÓN DEL FORMULARIO CON ENVENTO CLICK Y NO CON SUBMIT   
- 
-// si lo quisieras hacer con un botón de tipo button y no con el submit del formulario
-// <button type="button" id="btnGuardar" class="btn btn-primary">Guardar</button>
- 
-document.getElementById('btnGuardar').addEventListener('click', function () {
-    const form = document.getElementById('frmAltaProducto'); // Obtén el formulario
-    const formData = new FormData(form); // Pasa el formulario a FormData
-    console.log([...formData.entries()]);
-});
- 
-*/
+const dataManager = new DataManager('Articulos'); // Crear una instancia de DataManager
 
 
 document.getElementById('frmAltaProducto').addEventListener('submit', function (event) {
@@ -155,63 +155,83 @@ document.getElementById('frmAltaProducto').addEventListener('submit', function (
 
     // Obtener los datos del formulario. this hace referencia al formulario actual frmAltaProducto
     const formData = new FormData(this);
-    console.log('Form Data:', [...formData.entries()]); // Muestra los datos del formulario en la consola
+
+    const id = formData.get('txtIDArticulo'); // Obtener el ID del artículo
+    console.log("form", id); // Imprimir el ID en la consola
+    const dbSession = dataManager.readData(); // Leer los datos de sessionStorage
+
+    const idExiste = dbSession.some(articulo => articulo.id === id);
+    if (idExiste) {
+        mostrarAlerta("El ID del artículo ya existe, por favor ingrese otro ID", "alert alert-danger");
+        return;
+    }
+
+    const objArticulo = new Articulo(formData.get('txtIDArticulo'),
+        formData.get('txtNombre'),
+        formData.get('rngCantidad'),
+        formData.get('txtDescripcion'),
+        formData.get('txtPrecio'),
+        formData.get('cboCategoria'),
+        formData.get('rdbTipoVenta'));
+
+    dataManager.createData(objArticulo); // Guardar el objeto en sessionStorage
+
+
+    mostrarAlerta("Los datos han sido guardados exitosamente!!", "alert alert-success");
+    resetearFormulario(this); // Llamar a la función para resetear el formulario
+
+    //sessionStorage.setItem(formData.get('txtIDArticulo'), JSON.stringify([...formData.entries()]));
+});
+
+
+document.getElementById('btnShowProducts').addEventListener('click', function () {
+
+    const dbArticulos = dataManager.readData(); // Leer los datos de sessionStorage
 
     // obtener el cuerpo de la tabla
     const tbody = document.getElementById('tbodyProductos');
 
     // Agregar celdas con los valores del formulario
-    agregarFilaTabla(formData, tbody);
-
-    // newRow.innerHTML = `
-    //         <td>${formData.get('txtIDArticulo')}</td>
-    //         <td>${formData.get('txtNombre')}</td>
-    //         <td>${formData.get('rngCantidad')}</td>
-    //         <td>${formData.get('txtDescripcion')}</td>
-    //         <td>${formData.get('txtPrecio')}</td>
-    //         <td>${formData.get('cboCategoria')}</td>
-    //         <td>${formData.get('tipoVenta')}</td>
-    //         <td>
-    //             <button class="btn btn-warning btn-sm" onclick="editarProducto(this)">Editar</button>
-    //             <button class="btn btn-danger btn-sm" onclick="eliminarProducto(this)">Eliminar</button>
-    //             <button class="btn btn-warning btn-sm" onclick="ActualizarProducto(this)">Editar</button>
-    //             <button class="btn btn-danger btn-sm" onclick="GuardarProducto(this)">Eliminar</button>
-    //         </td>
-    //     `;
-
-    // Agregar la nueva fila al cuerpo de la tabla
-    //tbody.appendChild(newRow);
-
+    agregarFilaTabla(dbArticulos, tbody);
     mostrarTablaProductos(); // Mostrar la tabla de productos
-    resetearFormulario(this); // Llamar a la función para resetear el formulario
-
 });
 
 
-const agregarFilaTabla = (formData, tbody) => {
-    const newRow = document.createElement('tr');
-    createCell(newRow, formData.get('txtIDArticulo'));
-    createCell(newRow, formData.get('txtNombre'));
-    createCell(newRow, formData.get('rngCantidad'));
-    createCell(newRow, formData.get('txtDescripcion'));
-    createCell(newRow, formData.get('txtPrecio'));
-    createCell(newRow, formData.get('cboCategoria'));
-    createCell(newRow, formData.get('rdbTipoVenta'));
+document.getElementById('btnDeleteAllProducts').addEventListener('click', function () {
+    dataManager.clear(); // Limpiar el sessionStorage
+    ocultarTablaProductos();
+});
 
-    // Crear la celda de acciones
-    const actionsCell = document.createElement('td');
-    const editButton = document.createElement('img');
-    const deleteButton = document.createElement('img');
-    // Crea el boton de guardar
-    Buttons.crearBotonesAcciones(actionsCell, editButton, Buttons.botones.btnEdit.id, Buttons.botones.btnEdit.ruta, Buttons.botones.btnEdit.title);
-    // Crea el boton de Eliminar
-    Buttons.crearBotonesAcciones(actionsCell, deleteButton, Buttons.botones.btnDelete.id, Buttons.botones.btnDelete.ruta, Buttons.botones.btnDelete.title);
+const agregarFilaTabla = (dataSession, tbody) => {
 
-    // Agregar la celda de acciones a la fila
-    newRow.appendChild(actionsCell);
+    tbody.textContent = "";
 
-    // Agregar la nueva fila al cuerpo de la tabla
-    tbody.appendChild(newRow);
+    for (const articulo of dataSession) {
+
+        const newRow = document.createElement('tr');
+
+        const propiedades = ["id", "nombre", "cantidad", "descripcion", "precio", "categoria", "tipoVenta"];
+        propiedades.forEach(propiedad => {
+            createCell(newRow, articulo[propiedad]);
+        });
+
+        const actionsCell = document.createElement('td');
+        const editButton = document.createElement('img');
+        const deleteButton = document.createElement('img');
+        // Crea el boton de guardar
+        Buttons.crearBotonesAcciones(actionsCell, editButton, Buttons.botones.btnEdit.id, Buttons.botones.btnEdit.ruta, Buttons.botones.btnEdit.title);
+        // Crea el boton de Eliminar
+        Buttons.crearBotonesAcciones(actionsCell, deleteButton, Buttons.botones.btnDelete.id, Buttons.botones.btnDelete.ruta, Buttons.botones.btnDelete.title);
+
+        // Agregar la celda de acciones a la fila
+        newRow.appendChild(actionsCell);
+
+        // Agregar la nueva fila al cuerpo de la tabla
+        tbody.appendChild(newRow);
+    }
+
+
+
 }
 
 
@@ -225,12 +245,9 @@ function createCell(row, value) {
 // Funciones =====================================
 
 function resetearFormulario(form) {
-    //this.reset();
-    // Reinicia el valor del rango
+    form.reset();
     const rangoCantidad = document.getElementById('rngCantidad');
     rangoCantidad.value = 100; // Reinicia el valor del rango a 100
-    // Actualiza el valor mostrado en el <output> nextElementSibling tomando el siguiente elemento hermano
-    // que es el <output> en este caso.
     rangoCantidad.nextElementSibling.value = rangoCantidad.value; // Sincroniza el <output> con el rango
 }
 
@@ -245,5 +262,27 @@ function ocultarTablaProductos() {
     divListaProductos.style.display = 'none'; // Oculta la tabla
 }
 
+function mostrarAlerta(msg, tipoAlerta) {
+    try {
 
+        const divresponseInformation = document.getElementById("responseInformation");
+        divresponseInformation.textContent = msg;
+        divresponseInformation.className = tipoAlerta;
+        divresponseInformation.style.display = "block";
+        divresponseInformation.classList.add("fade-in");
+
+        setTimeout(() => {
+            divresponseInformation.classList.add("fade-out");
+            setTimeout(() => {
+                divresponseInformation.style.display = "none";
+                divresponseInformation.classList.remove("fade-in", "fade-out");
+            }, 2000); // Tiempo de duración de la animación (1 segundo)
+        }, 2000); // Tiempo de visualización del mensaje antes de desaparecer (2 segundos)
+
+    } catch (error) {
+        console.log("Error en mostrar alerta: " + error);
+    }
+
+
+}
 
