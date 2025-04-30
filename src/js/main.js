@@ -45,10 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
             datosCeldas = []; // Reinicia el array de datos de celdas
             cells.forEach((cell, index) => {
 
-
                 if (index < cells.length - 1 && index !== 0) { // Evita la última celda (acciones) y evita la celda del ID
-
-
                     const valorActual = cell.textContent; // Obtiene el valor actual de la celda
                     datosCeldas.push(valorActual); // Agrega el valor actual al array
 
@@ -83,8 +80,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (document.querySelectorAll('#tbodyProductos tr').length === 0) {
                 ocultarTablaProductos();
             }
-
-
         }
 
         if (event.target.id === 'btnGuardar') {
@@ -105,7 +100,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
             dataManager.updateData(id, newObjArticulo); // Actualiza el objeto en sessionStorage
-
             const dbArticulos = dataManager.readData(); // Leer los datos de sessionStorage
 
             // obtener el cuerpo de la tabla
@@ -147,7 +141,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 const dataManager = new DataManager('Articulos'); // Crear una instancia de DataManager
-
 
 document.getElementById('frmAltaProducto').addEventListener('submit', function (event) {
     event.preventDefault(); // Evita el envío del formulario
@@ -202,7 +195,14 @@ document.getElementById('btnShowProducts').addEventListener('click', function ()
 
     // Agregar celdas con los valores del formulario
     agregarFilaTabla(dbArticulos, tbody);
+    agregarFilaTabla(dbArticulos, tbody);
     mostrarTablaProductos(); // Mostrar la tabla de productos
+});
+
+
+document.getElementById('btnDeleteAllProducts').addEventListener('click', function () {
+    dataManager.clear(); // Limpiar el sessionStorage
+    ocultarTablaProductos();
 });
 
 
@@ -232,14 +232,13 @@ const agregarFilaTabla = (dataSession, tbody) => {
         // Crea el boton de Eliminar
         Buttons.crearBotonesAcciones(actionsCell, deleteButton, Buttons.botones.btnDelete.id, Buttons.botones.btnDelete.ruta, Buttons.botones.btnDelete.title);
 
+
         // Agregar la celda de acciones a la fila
         newRow.appendChild(actionsCell);
 
         // Agregar la nueva fila al cuerpo de la tabla
         tbody.appendChild(newRow);
     }
-
-
 
 }
 
@@ -254,6 +253,7 @@ function createCell(row, value) {
 // Funciones =====================================
 
 function resetearFormulario(form) {
+    form.reset();
     form.reset();
     const rangoCantidad = document.getElementById('rngCantidad');
     rangoCantidad.value = 100; // Reinicia el valor del rango a 100
